@@ -1,2 +1,0 @@
-2024Feb29	19:46:51	b0406798-e0b4-4342-8eeb-8e799ef247ad	Error: Not Allowed by CORS
-2024Feb29	20:42:04	e2f463da-1b2b-4881-b392-1bb2d0c3c86f	ReferenceError: path is not defined

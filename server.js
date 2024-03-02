@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const app = express();
 const path = require('path');
 const dotenv = require('dotenv');
+const corsOptions = require('./config/corsOptions');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 const { logger } = require('./middleware/logEvents');
@@ -16,20 +17,8 @@ mongoose.connect(process.env.ENV_DEV_MONGO)
 
 // Save the log request
 app.use(logger);
-// Cross Origin Resource Sharing
-const whitelist = ['https://a-donald.vercel.app', 'http://127.0.0.1:5173', 'http://127.0.0.1:3500'];
-const corsOptions = {
-    origin: (origin, callback) => {
-        if (whitelist.indexOf(origin) !== -1 || !origin) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not Allowed by CORS'))
-        }
-    },
-    optionSuccesStatus: 200
-}
+// use cors options to allow origin
 app.use(cors(corsOptions));
-
 // Middleware to handle url encoded data like forms
 app.use(express.urlencoded({ extended: false }));
 // Middleware for json data

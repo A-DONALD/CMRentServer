@@ -29,15 +29,26 @@ exports.login = (req, res, next) => {
                     if (!valid) {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
                     }
-                    res.status(200).json({
-                        userId: user._id,
-                        token: jwt.sign(
-                            { userId: user._id },
-                            process.env.ENV_SECRET_TOKEN,
-                            { expiresIn: '24h' })
-                    });
+                    const accesToken = jwt.sign(
+                        { userId: user._id },
+                        process.env.ENV_ACCESS_TOKEN,
+                        { expiresIn: '30s' }
+                    );
+                    const refreshToken = jwt.sign(
+                        { userId: user._id },
+                        process.env.ENV_REFRESH_TOKEN,
+                        { expiresIn: '24h' }
+                    );
+                    res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+                    res.status(200).json({ userId: user._id, accesToken });
                 })
                 .catch(error => res.status(500).json({ error }));
         })
         .catch(error => res.status(500).json({ error }));
 };
+
+exports.getAllUser = (req, res, next) => {
+    User.find()
+        .then(user => res.status(200).json(user))
+        .catch(error => res.status(400).json({ error }));
+}

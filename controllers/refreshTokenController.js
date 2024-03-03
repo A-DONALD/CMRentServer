@@ -5,12 +5,11 @@ dotenv.config();
 
 const handleRefreshToken = (req, res, next) => {
     const cookies = req.cookies
-    if (!cookies?.jwt) res.sendStatus(401);
-    console.log(cookies.jwt);
+    if (!cookies?.jwt) return res.sendStatus(401);
     const refreshToken = cookies.jwt;
     User.findOne({ token: refreshToken })
         .then(user => {
-            if (!user) return res.sendStatus(403);
+            if (!user) return res.sendStatus(403); // forbiden
             jwt.verify(
                 refreshToken,
                 process.env.ENV_REFRESH_TOKEN,
@@ -27,7 +26,7 @@ const handleRefreshToken = (req, res, next) => {
                 }
             )
         })
-        .catch(error => res.status(500).json({ error }));
+        .catch(() => res.sendStatus(500));
 };
 
 module.exports = { handleRefreshToken };

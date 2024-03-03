@@ -10,26 +10,29 @@ exports.signup = (req, res, next) => {
         .then(hash => {
             const user = new User({
                 email: req.body.email,
-                password: hash
+                password: hash,
+                token: ''
             });
             user.save()
-                .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
-                .catch(() => res.sendStatus(400));
+                .then(() => res.sendStatus(201))
+                .catch(() => { return res.sendStatus(400) });
         })
         .catch(() => res.sendStatus(500));
 };
 
 exports.login = (req, res, next) => {
+    //find user who have the same email
     User.findOne({ email: req.body.email })
         .then(user => {
             if (!user) {
-                return res.sendStatus(401);
+                return res.sendStatus(401); // no user: Unauthorized
             }
+            // compare the password hash
             bcrypt.compare(req.body.password, user.password)
                 .then(valid => {
                     if (!valid) {
-                        logEvents(`${req.body.email}\tinvalid`, 'accountLog.txt');
-                        return res.sendStatus(401);
+                        logEvents(`${req.body.email}\tdenied`, 'accountLog.txt');
+                        return res.sendStatus(401); // wrong password: Unauthorized
                     }
                     const accesToken = jwt.sign(
                         { userId: user._id },
@@ -41,14 +44,35 @@ exports.login = (req, res, next) => {
                         process.env.ENV_REFRESH_TOKEN,
                         { expiresIn: '24h' }
                     );
+                    // save the refresh token in the db
                     User.updateOne({ _id: user._id }, { token: refreshToken })
                         .then(console.log('token saved'))
                         .catch(() => res.sendStatus(500));
-                    logEvents(`${req.body.email}\tvalid`, 'accountLog.txt');
-                    res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+                    logEvents(`${req.body.email}\tlogin`, 'accountLog.txt');
+                    res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
                     res.status(200).json({ accesToken });
                 })
                 .catch(() => res.sendStatus(500));
+        })
+        .catch(() => res.sendStatus(500));
+};
+
+exports.logout = (req, res, next) => {
+    const cookies = req.cookies
+    if (!cookies?.jwt) return res.sendStatus(204); // No content
+    const refreshToken = cookies.jwt;
+    User.findOne({ token: refreshToken })
+        .then(user => {
+            if (!user) {
+                res.clearCookie('jwt', { httpOnly: true });
+                return res.sendStatus(204);
+            }
+            // Delete the refresh token in db
+            User.updateOne({ _id: user._id }, { token: '' })
+                .then(logEvents(`${user.email}\tlogout`, 'accountLog.txt'))
+                .catch(() => res.sendStatus(500));
+            res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true }); // secure: true for https only
+            res.sendStatus(204);
         })
         .catch(() => res.sendStatus(500));
 };

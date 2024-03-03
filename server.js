@@ -8,6 +8,7 @@ const corsOptions = require('./config/corsOptions');
 const cookieParser = require('cookie-parser');
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
+const credentials = require('./middleware/credentials');
 const { logger } = require('./middleware/logEvents');
 const auth = require('./middleware/auth');
 const PORT = process.env.PORT || 3500;
@@ -19,6 +20,9 @@ mongoose.connect(process.env.ENV_DEV_MONGO)
 
 // Save the log request
 app.use(logger);
+
+// check if credentials is needed and fetch cookies credentials requirement
+app.use(credentials);
 
 // use cors options to allow origin
 app.use(cors(corsOptions));
@@ -39,11 +43,12 @@ app.use(express.static(path.join(__dirname, '/public')));
 app.use('/', require('./routes/root'));
 // Serve the authenticator route
 app.use('/api/auth', require('./routes/user'));
-app.use('/refresh', require('./routes/refresh'))
+app.use('/api/auth', require('./routes/refresh'))
+app.use('/api/auth', require('./routes/logout'));
 
 //app.use(auth);
 // Serve the route who need authentication
-app.use('/api/auth', require('./routes/app'));
+app.use('/api', require('./routes/app'));
 
 // defaut route
 app.all('*', notFound);

@@ -11,13 +11,14 @@ exports.signup = (req, res, next) => {
             const user = new User({
                 email: req.body.email,
                 password: hash,
+                roles: { "User": 2001 },
                 token: ''
             });
             user.save()
                 .then(() => res.sendStatus(201))
                 .catch(() => { return res.sendStatus(400) });
         })
-        .catch(() => res.sendStatus(500));
+        .catch(error => res.status(500).json({ error }));
 };
 
 exports.login = (req, res, next) => {
@@ -34,8 +35,15 @@ exports.login = (req, res, next) => {
                         logEvents(`${req.body.email}\tdenied`, 'accountLog.txt');
                         return res.sendStatus(401); // wrong password: Unauthorized
                     }
+                    const roles = Object.values(user.roles);
+                    console.log(roles);
                     const accesToken = jwt.sign(
-                        { userId: user._id },
+                        {
+                            "UserInfo": {
+                                "userId": user._id,
+                                "roles": roles
+                            }
+                        },
                         process.env.ENV_ACCESS_TOKEN,
                         { expiresIn: '30s' }
                     );
@@ -47,14 +55,14 @@ exports.login = (req, res, next) => {
                     // save the refresh token in the db
                     User.updateOne({ _id: user._id }, { token: refreshToken })
                         .then(console.log('token saved'))
-                        .catch(() => res.sendStatus(500));
+                        .catch(error => res.status(500).json({ error }));
                     logEvents(`${req.body.email}\tlogin`, 'accountLog.txt');
                     res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
                     res.status(200).json({ accesToken });
                 })
-                .catch(() => res.sendStatus(500));
+                .catch(error => res.status(500).json({ error }));
         })
-        .catch(() => res.sendStatus(500));
+        .catch(error => res.status(500).json({ error }));
 };
 
 exports.logout = (req, res, next) => {
@@ -70,15 +78,9 @@ exports.logout = (req, res, next) => {
             // Delete the refresh token in db
             User.updateOne({ _id: user._id }, { token: '' })
                 .then(logEvents(`${user.email}\tlogout`, 'accountLog.txt'))
-                .catch(() => res.sendStatus(500));
+                .catch(error => res.status(500).json({ error }));
             res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true }); // secure: true for https only
             res.sendStatus(204);
         })
-        .catch(() => res.sendStatus(500));
+        .catch(error => res.status(500).json({ error }));
 };
-
-exports.getAllUser = (req, res, next) => {
-    User.find()
-        .then(user => res.status(200).json(user))
-        .catch(error => res.status(400).json({ error }));
-}

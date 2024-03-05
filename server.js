@@ -10,7 +10,7 @@ const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
 const credentials = require('./middleware/credentials');
 const { logger } = require('./middleware/logEvents');
-const auth = require('./middleware/auth');
+const auth = require('./middleware/authentication');
 const PORT = process.env.PORT || 3500;
 dotenv.config();
 
@@ -46,9 +46,11 @@ app.use('/api/auth', require('./routes/user'));
 app.use('/api/auth', require('./routes/refresh'))
 app.use('/api/auth', require('./routes/logout'));
 
-//app.use(auth);
+// authentication
+app.use(auth);
+
 // Serve the route who need authentication
-app.use('/api', require('./routes/app'));
+app.use('/api/thing', require('./routes/app'));
 
 // defaut route
 app.all('*', notFound);

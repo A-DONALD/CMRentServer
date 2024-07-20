@@ -54,7 +54,6 @@ exports.login = (req, res, next) => {
                     );
                     // save the refresh token in the db
                     User.updateOne({ _id: user._id }, { token: refreshToken })
-                        .then(console.log('token saved'))
                         .catch(error => res.status(500).json({ error }));
                     logEvents(`${req.body.email}\tlogin`, 'accountLog.txt');
                     res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });

@@ -45,7 +45,7 @@ exports.login = (req, res, next) => {
                             }
                         },
                         process.env.ENV_ACCESS_TOKEN,
-                        { expiresIn: '30s' }
+                        { expiresIn: '1h' }
                     );
                     const refreshToken = jwt.sign(
                         { userId: user._id },
@@ -58,7 +58,7 @@ exports.login = (req, res, next) => {
                         .catch(error => res.status(500).json({ error }));
                     logEvents(`${req.body.email}\tlogin`, 'accountLog.txt');
                     res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
-                    res.status(200).json({ accesToken });
+                    res.status(200).json({ id: user._id, accesToken, roles });
                 })
                 .catch(error => res.status(500).json({ error }));
         })
@@ -84,3 +84,20 @@ exports.logout = (req, res, next) => {
         })
         .catch(error => res.status(500).json({ error }));
 };
+
+exports.token = (req, res, next) => {
+    const { token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        jwt.verify(token, process.env.ENV_ACCESS_TOKEN);
+        res.status(200).send("Valid Token");
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            res.status(403).send('Token expired');
+        } else {
+            res.status(401).send('Invalid token');
+        }
+    }
+}

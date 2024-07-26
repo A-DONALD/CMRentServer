@@ -24,6 +24,9 @@ app.use(logger);
 // check if credentials is needed and fetch cookies credentials requirement
 app.use(credentials);
 
+// preflight reequest handler
+app.options('*', cors(corsOptions))
+
 // use cors options to allow origin
 app.use(cors(corsOptions));
 
@@ -37,7 +40,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // server static files directory
-app.use(express.static(path.join(__dirname, '/public')));
+app.use(express.static(path.join(__dirname, '/files')));
 
 // Serve the root directory
 app.use('/', require('./routes/root'));
@@ -47,12 +50,12 @@ app.use('/api/auth', require('./routes/refresh'))
 app.use('/api/auth', require('./routes/logout'));
 
 // authentication
-app.use(auth);
+// app.use(auth);
 
 // Serve the route who need authentication
-app.use('/api/thing', require('./routes/app'));
+app.use('/api/thing', auth, require('./routes/app'));
 
-// defaut route
+// default route
 app.all('*', notFound);
 
 // error handler
